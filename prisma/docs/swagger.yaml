@@ -4,6 +4,8 @@ info:
   description: API for managing communities, opportunities, beneficiaries, and user roles.
   version: 1.0.0
 servers:
+  - url: https://lifebridge.onrender.com/api
+    description: Production Server
   - url: http://localhost:3000/api
     description: Local Development Server
 
