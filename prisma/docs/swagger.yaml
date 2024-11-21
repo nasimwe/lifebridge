@@ -1,0 +1,476 @@
+openapi: 3.0.1
+info:
+  title: Community Management API
+  description: API for managing communities, opportunities, beneficiaries, and user roles.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api
+    description: Local Development Server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Opportunity:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        adminId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+    Community:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        adminId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Beneficiary:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        details:
+          type: string
+    Sponsor:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        maxSupportAmount:
+          type: integer
+        currentSupportAmount:
+          type: integer
+        maxBeneficiaries:
+          type: integer
+        currentBeneficiaries:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+security:
+  - BearerAuth: []
+
+paths:
+  /auth/signup:
+    post:
+      summary: User Signup
+      description: Register a new user account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+              required:
+                - name
+                - email
+                - password
+                - role
+      responses:
+        "201":
+          description: User created successfully.
+        "400":
+          description: Validation error in request body.
+        "500":
+          description: Internal server error.
+
+  /auth/login:
+    post:
+      summary: User Login
+      description: Authenticate a user and issue a JWT for secure access.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        "200":
+          description: User authenticated successfully, JWT issued.
+        "401":
+          description: Invalid credentials provided.
+        "404":
+          description: User not found.
+        "500":
+          description: Internal server error.
+
+  /admin/opportunity:
+    post:
+      summary: Create an Opportunity
+      security:
+        - BearerAuth: []
+      description: Admin can add a new opportunity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+              required:
+                - title
+                - description
+      responses:
+        "201":
+          description: Opportunity created successfully.
+        "401":
+          description: Unauthorized access.
+        "500":
+          description: Internal server error.
+
+    get:
+      summary: Fetch All Opportunities
+      security:
+        - BearerAuth: []
+      description: Retrieve a list of opportunities created by the logged-in admin.
+      responses:
+        "200":
+          description: List of available opportunities.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Opportunity"
+        "401":
+          description: Unauthorized access.
+        "500":
+          description: Internal server error.
+
+  /admin/beneficiaries:
+    get:
+      summary: Get All Beneficiaries
+      security:
+        - BearerAuth: []
+      description: Retrieve a list of all beneficiaries. Restricted to admin users.
+      responses:
+        "200":
+          description: List of all beneficiaries.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Beneficiary"
+        "401":
+          description: Unauthorized access.
+        "500":
+          description: Internal server error.
+
+  /admin/community:
+    post:
+      summary: Create a Community
+      security:
+        - BearerAuth: []
+      description: Admin can add a new community.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+              required:
+                - title
+                - description
+      responses:
+        "201":
+          description: Community created successfully.
+        "401":
+          description: Unauthorized access.
+        "500":
+          description: Internal server error.
+
+  /admin/community/post/{postId}:
+    delete:
+      summary: Delete a Community Post
+      security:
+        - BearerAuth: []
+      description: Remove a specific community post. Only admins can perform this action.
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post to be deleted.
+      responses:
+        "200":
+          description: Community post deleted successfully.
+        "401":
+          description: Unauthorized access.
+        "404":
+          description: Post not found.
+        "500":
+          description: Internal server error.
+
+  /admin/beneficiary/status:
+    put:
+      summary: Update Beneficiary Status
+      security:
+        - BearerAuth: []
+      description: Admin can update a beneficiary's status.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: integer
+                status:
+                  type: string
+                  enum:
+                    - APPROVED
+                    - REJECTED
+                sponsorId:
+                  type: integer
+              required:
+                - userId
+                - status
+                - sponsorId
+      responses:
+        "200":
+          description: Beneficiary status updated successfully.
+        "400":
+          description: Invalid request data.
+        "401":
+          description: Unauthorized access.
+        "404":
+          description: Beneficiary not found.
+        "500":
+          description: Internal server error.
+
+  /admin/sponsor:
+    post:
+      summary: Create a Sponsor
+      security:
+        - BearerAuth: []
+      description: Add a new sponsor. Admin only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                maxSupportAmount:
+                  type: integer
+                maxBeneficiaries:
+                  type: integer
+                currentSupportAmount:
+                  type: integer
+              required:
+                - name
+                - email
+                - maxSupportAmount
+                - maxBeneficiaries
+                - currentSupportAmount
+      responses:
+        "201":
+          description: Sponsor created successfully.
+        "401":
+          description: Unauthorized.
+        "500":
+          description: Internal server error.
+
+    get:
+      summary: Get All Sponsors
+      security:
+        - BearerAuth: []
+      description: Retrieve a list of all sponsors. Admin only.
+      responses:
+        "200":
+          description: List of sponsors.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Sponsor"
+        "401":
+          description: Unauthorized.
+        "500":
+          description: Internal server error.
+  /admin/sponsorusers:
+    get:
+      summary: Get All Sponsors from Users Table
+      security:
+        - BearerAuth: []
+      description: Retrieve a list of all sponsors from the users table. Admin only.
+      responses:
+        "200":
+          description: List of sponsors.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Sponsor"
+        "401":
+          description: Unauthorized.
+        "500":
+          description: Internal server error.
+
+  /public/communities:
+    get:
+      summary: List All Communities
+
+      description: Fetch a list of all public communities with details.
+
+      responses:
+        "200":
+          description: List of public communities.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Community"
+        "500":
+          description: Internal server error.
+
+  /public/community/{communityId}/posts:
+    get:
+      summary: Get Posts for a Community
+      description: Retrieve posts for a specific community.
+      parameters:
+        - in: path
+          name: communityId
+          required: true
+          schema:
+            type: integer
+          description: ID of the community.
+      responses:
+        "200":
+          description: List of posts for the community.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+        "404":
+          description: Community not found.
+        "500":
+          description: Internal server error.
+
+  /public/community/join:
+    post:
+      summary: Join a Community
+      security:
+        - BearerAuth: []
+      description: Allows a user to join a community.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                communityId:
+                  type: integer
+              required:
+                - communityId
+      responses:
+        "200":
+          description: Successfully joined the community.
+        "400":
+          description: Already a member.
+        "500":
+          description: Internal server error.
+
+  /public/community/leave:
+    post:
+      summary: Leave a Community
+      security:
+        - BearerAuth: []
+      description: Allows a user to leave a community.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                communityId:
+                  type: integer
+              required:
+                - communityId
+      responses:
+        "200":
+          description: Successfully left the community.
+        "500":
+          description: Internal server error.

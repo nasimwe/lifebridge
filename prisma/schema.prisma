@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                Int               @id @default(autoincrement())
+  name              String
+  email             String            @unique
+  password          String
+  role              Role              @default(USER)
+  applicationStatus ApplicationStatus @default(PENDING)
+  createdAt         DateTime          @default(now())
+  opportunities     Opportunity[] // One-to-Many relation
+  sponsorId         Int? // Optional, linked to Sponsor
+  sponsor           Sponsor?          @relation(fields: [sponsorId], references: [id])
+  communities       Community[]       @relation("UserCommunities") // Many-to-Many relation
+  profileInfo       ProfileInfo? // One-to-One relation
+  posts             CommunityPost[] // One-to-Many relation, user can post in communities
+
+  // Add this opposite relation for Sponsor
+  sponsoredBy Sponsor[] @relation("SponsorBeneficiaries")
+
+  // Add this opposite relation for Community admin
+  adminCommunities Community[] @relation("AdminCommunities")
+}
+
+model Sponsor {
+  id                   Int      @id @default(autoincrement())
+  name                 String
+  email                String   @unique
+  maxSupportAmount     Int
+  currentSupportAmount Int      @default(0)
+  maxBeneficiaries     Int
+  currentBeneficiaries Int      @default(0)
+  createdAt            DateTime @default(now())
+  userId Int
+  beneficiaries User[] @relation("SponsorBeneficiaries") // One-to-Many relation
+  User          User[]
+}
+
+model Opportunity {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  adminId     Int
+  createdAt   DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id])
+}
+
+model Community {
+  id          Int             @id @default(autoincrement())
+  title       String
+  description String
+  adminId     Int
+  createdAt   DateTime        @default(now())
+  posts       CommunityPost[] // One-to-Many relation
+
+  admin User   @relation(fields: [adminId], references: [id], name: "AdminCommunities")
+  users User[] @relation("UserCommunities") // Many-to-Many relation
+}
+
+model CommunityPost {
+  id          Int      @id @default(autoincrement())
+  title       String
+  content     String
+  authorId    Int
+  communityId Int
+  createdAt   DateTime @default(now())
+
+  author    User      @relation(fields: [authorId], references: [id])
+  community Community @relation(fields: [communityId], references: [id])
+}
+
+model ProfileInfo {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  bio       String?
+  location  String?
+  website   String?
+  lifeGoals String? // Additional field for life-related information
+  interests String? // Additional field for user interests
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+enum Role {
+  ADMIN
+  SPONSOR
+  USER
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
